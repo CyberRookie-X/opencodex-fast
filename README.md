@@ -33,12 +33,13 @@ Add the plugin to your OpenCode config:
 
 ## Configuration
 
-You can pass plugin options directly from `opencode.json`:
+You can pass plugin options directly on the `opencodex-fast` plugin entry in `opencode.json`:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
+    "@example-org/one-plugin",
     [
       "opencodex-fast@latest",
       {
@@ -48,7 +49,8 @@ You can pass plugin options directly from `opencode.json`:
           "https://proxy.example.com/backend-api/codex/responses"
         ]
       }
-    ]
+    ],
+    "@example-org/another-plugin"
   ]
 }
 ```
