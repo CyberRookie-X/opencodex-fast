@@ -55,8 +55,8 @@ You can pass plugin options directly from `opencode.json`:
 
 ### Options
 
-- `enabled`: startup fast-mode state
-- `extraUrls`: additional request URLs to match for priority injection
+- `enabled`: starts OpenCode with fast mode already enabled so you do not need to run `/fast` manually
+- `extraUrls`: additional request URLs to match for priority injection; these are added on top of the built-in Codex matcher, not used instead of it
 
 ### Behavior Notes
 
