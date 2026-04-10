@@ -21,12 +21,12 @@ const STATE_PATH = join(
 
 type FastPluginOptions = {
     enabled?: unknown;
-    extraUrls?: unknown;
+    extraUrlPrefixes?: unknown;
 };
 
 let fastEnabled = false;
 let configuredEnabled: boolean | undefined;
-let urlMatchers = [DEFAULT_CODEX_URL_MATCHER];
+let extraUrlPrefixes: string[] = [];
 
 function ensureStateDir(): void {
     mkdirSync(dirname(STATE_PATH), { recursive: true });
@@ -38,7 +38,7 @@ function resolveUrl(input: any): string {
     return input?.url ?? "";
 }
 
-function normalizeMatcherList(input: unknown): string[] {
+function normalizeUrlPrefixList(input: unknown): string[] {
     if (!Array.isArray(input)) return [];
 
     return input
@@ -51,23 +51,20 @@ function trimTrailingSlashes(value: string): string {
     return value.replace(/\/+$/, "");
 }
 
-function matchesUrl(url: string, matcher: string): boolean {
-    if (matcher.includes("://")) {
-        const normalizedUrl = trimTrailingSlashes(url);
-        const normalizedMatcher = trimTrailingSlashes(matcher);
-        return (
-            normalizedUrl === normalizedMatcher ||
-            normalizedUrl.startsWith(`${normalizedMatcher}?`) ||
-            normalizedUrl.startsWith(`${normalizedMatcher}#`) ||
-            normalizedUrl.startsWith(`${normalizedMatcher}/`)
-        );
-    }
-
-    return url.includes(matcher);
+function matchesUrlPrefix(url: string, prefix: string): boolean {
+    const normalizedUrl = trimTrailingSlashes(url);
+    const normalizedPrefix = trimTrailingSlashes(prefix);
+    return (
+        normalizedUrl === normalizedPrefix ||
+        normalizedUrl.startsWith(`${normalizedPrefix}?`) ||
+        normalizedUrl.startsWith(`${normalizedPrefix}#`) ||
+        normalizedUrl.startsWith(`${normalizedPrefix}/`)
+    );
 }
 
 function matchesConfiguredUrl(url: string): boolean {
-    return urlMatchers.some((matcher) => matchesUrl(url, matcher));
+    if (url.includes(DEFAULT_CODEX_URL_MATCHER)) return true;
+    return extraUrlPrefixes.some((prefix) => matchesUrlPrefix(url, prefix));
 }
 
 function parseBody(body: unknown): Record<string, unknown> | null {
@@ -119,13 +116,10 @@ function resolveInitialEnabled(options: FastPluginOptions | undefined): boolean 
     return readState();
 }
 
-function resolveUrlMatchers(options: FastPluginOptions | undefined): string[] {
-    return Array.from(
-        new Set([
-            DEFAULT_CODEX_URL_MATCHER,
-            ...normalizeMatcherList(options?.extraUrls),
-        ]),
-    );
+function resolveExtraUrlPrefixes(
+    options: FastPluginOptions | undefined,
+): string[] {
+    return Array.from(new Set(normalizeUrlPrefixList(options?.extraUrlPrefixes)));
 }
 
 function appendConfigNote(message: string): string {
@@ -206,7 +200,7 @@ const plugin: Plugin = async (ctx, options) => {
     const fastOptions = options as FastPluginOptions | undefined;
     configuredEnabled = resolveConfiguredEnabled(fastOptions);
     fastEnabled = resolveInitialEnabled(fastOptions);
-    urlMatchers = resolveUrlMatchers(fastOptions);
+    extraUrlPrefixes = resolveExtraUrlPrefixes(fastOptions);
     const originalFetch = globalThis.fetch;
 
     globalThis.fetch = async (input: any, init?: any) => {
