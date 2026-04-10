@@ -7,7 +7,8 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Plugin } from "@opencode-ai/plugin";
+import type { Plugin, PluginInput } from "@opencode-ai/plugin";
+import type { Config, Part } from "@opencode-ai/sdk";
 
 const DEFAULT_CODEX_URL_MATCHER = "/backend-api/codex/responses";
 const FAST_ON_MESSAGE = "Fast mode is now ON.";
@@ -196,7 +197,7 @@ function getFastMessage(modeArg?: string): string {
     return appendConfigNote(FAST_ON_MESSAGE);
 }
 
-const plugin: Plugin = async (ctx, options) => {
+const plugin = (async (ctx: PluginInput, options?: unknown) => {
     const fastOptions = options as FastPluginOptions | undefined;
     configuredEnabled = resolveConfiguredEnabled(fastOptions);
     fastEnabled = resolveInitialEnabled(fastOptions);
@@ -209,7 +210,7 @@ const plugin: Plugin = async (ctx, options) => {
     };
 
     return {
-        config: async (opencodeConfig) => {
+        config: async (opencodeConfig: Config) => {
             opencodeConfig.command ??= {};
             opencodeConfig.command["fast"] = {
                 template: "[on|off|status]",
@@ -219,7 +220,7 @@ const plugin: Plugin = async (ctx, options) => {
 
         "command.execute.before": async (
             input: { command: string; sessionID: string; arguments: string },
-            _output: { parts: any[] },
+            _output: { parts: Part[] },
         ) => {
             if (input.command !== "fast") {
                 return;
@@ -230,6 +231,6 @@ const plugin: Plugin = async (ctx, options) => {
             throw new Error(FAST_HANDLED_ERROR);
         },
     };
-};
+}) as Plugin;
 
 export default plugin;
